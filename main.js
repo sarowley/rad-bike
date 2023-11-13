@@ -129,6 +129,7 @@ let leftRightWallHitSpeed = 1;
 // The game loop
 function update() {
   if (!ticks) {
+    begin = true;
     player = {
       pos: vec(100, 50),
       firingCooldown: playerFiringCooldown,
