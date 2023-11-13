@@ -14,45 +14,269 @@
     <script src="https://unpkg.com/pixi-filters@3.1.1/dist/pixi-filters.js"></script>
     <script src="https://unpkg.com/crisp-game-lib@1.1.1/docs/bundle.js"></script>
 
-<script>
-title = "Rad-Bike";
+    <script>
+      title = "Rad-Crunch";
 
-description = `
-[Tap] To Flip
+      description = `
+[Mouse] To Move
+[Tap] To Change Shooting
 `;
 
-// Define pixel arts of characters
-// Each letter represents a pixel color
-// l - Black    L - Light Black
-// r - Red      R - Light Red
-// g - Green    G - Light Green
-// b - Blue     B - Light Blue
-// y - Yellow   Y - Light Yellow
-// p - Purple   P - Light Purple
-// c - Cyan     C - Light Cyan
+      // Define pixel arts of characters
+      // Each letter represents a pixel color
+      // l - Black    L - Light Black
+      // r - Red      R - Light Red
+      // g - Green    G - Light Green
+      // b - Blue     B - Light Blue
+      // y - Yellow   Y - Light Yellow
+      // p - Purple   P - Light Purple
+      // c - Cyan     C - Light Cyan
 
-characters = [
+      characters = [
+        `
+pppppp
+plpplp
+pppppp
+pp  pp
+pp  pp
+`,
+        `
+yyyyyy
+yyyyyy
+yyyyyy
+yyyyyy
+yyyyyy
+yyyyyy
+`,
+        `
+LLLLLL
+LLLLLL
+LLLLLL
+LLLLLL
+LLLLLL
+LLLLLL
+`,
+      ];
 
-];
+      options = {
+        theme: "crt",
+        viewSize: { x: 200, y: 100 },
+        isReplayEnabled: true,
+      };
 
-const G = {
+      /**
+       * @typedef {{
+       * pos: Vector
+       * }} upBox
+       */
 
-};
+      /**
+       * @type { upBox }
+       */
+      let upBoxes;
 
-options = {
+      /**
+       * @typedef {{
+       * pos: Vector,
+       * firingCooldown: number
+       * }} Player
+       */
 
-};
+      /**
+       * @type { Player }
+       */
 
-// The game loop
-function update() {
-    if (!ticks) {
-       
-    }
-}
+      let player;
 
-addEventListener("load", onLoad);
-</script>
+      /**
+       * @typedef{{
+       * pos: Vector
+       * }} FBullet
+       */
 
+      /**
+       * @type { FBulllet [] }
+       */
+      let fBullets;
+
+      /**
+       * @typedef {{
+       * pos: Vector,
+       * angle: number,
+       * rotation: number
+       * }} EBullet
+       */
+
+      /**
+       * @type { EBullet [] }
+       */
+
+      let eBullets;
+
+      /**
+       * @typedef {{
+       * pos: Vector,
+       * firingCooldown: number
+       * }} Enemy
+       */
+
+      /**
+       * @type { Enemy [] }
+       */
+      let enemies;
+
+      let up = true;
+      let down = false;
+      let left = false;
+      let right = false;
+      let begin = true;
+      let playerFiringCooldown = 20;
+
+      // The game loop
+      function update() {
+        if (!ticks) {
+          player = {
+            pos: vec(200 * 0.5, 100 * 0.5),
+            firingCooldown: playerFiringCooldown,
+          };
+
+          fBullets = [];
+          eBullets = [];
+          upBoxes = [];
+          enemies = [];
+        }
+
+        //all the movement and input stuff
+
+        if (enemies.length === 0) {
+          //spawn on the left side
+          for (let i = 0; i < 2; i++) {
+            const posX = 0;
+            const posY = rnd(0, 100);
+            enemies.push({ pos: vec(posX, posY), firingCooldown: 250 });
+          }
+          //spawn on the right side
+          for (let i = 0; i < 2; i++) {
+            const posX = 200;
+            const posY = rnd(0, 100);
+            enemies.push({ pos: vec(posX, posY), firingCooldown: 250 });
+          }
+          //spawn on the top side
+          for (let i = 0; i < 2; i++) {
+            const posX = rnd(0, 200);
+            const posY = 0;
+            enemies.push({ pos: vec(posX, posY), firingCooldown: 250 });
+          }
+          //spawn on the bottom side
+          for (let i = 0; i < 2; i++) {
+            const posX = rnd(0, 200);
+            const posY = 100;
+            enemies.push({ pos: vec(posX, posY), firingCooldown: 250 });
+          }
+        }
+
+        if (begin) {
+          begin = false;
+          for (let i = 0; i < 200; i += 6) {
+            upBoxes.push({ pos: vec(i, 5) });
+          }
+        }
+
+        player.pos = vec(input.pos.x, input.pos.y);
+        player.pos.clamp(5, 195, 15, 95);
+        color("black");
+        char("a", player.pos);
+
+        player.firingCooldown--;
+        if (player.firingCooldown <= 0) {
+          fBullets.push({
+            pos: vec(player.pos.x, player.pos.y),
+          });
+          player.firingCooldown = playerFiringCooldown;
+        }
+
+        upBoxes.forEach((b) => {
+          b.pos.y += 0.05;
+        });
+
+        fBullets.forEach((fb) => {
+          if (up) {
+            fb.pos.y -= 5;
+          }
+          if (down) {
+            fb.pos.y += 5;
+          }
+          if (left) {
+            fb.pos.x -= 5;
+          }
+          if (right) {
+            fb.pos.x += 5;
+          }
+          color("yellow");
+          box(fb.pos, 2);
+        });
+
+
+
+        const collideTop = char("b", 100, 15).isColliding.rect.yellow;
+
+        if (collideTop) {
+          console.log("hit");
+          upBoxes.forEach((b) => {
+            b.pos.y -= 1.5;
+          });
+        }
+
+
+        //all the removing functions
+
+        remove(fBullets, (fb) => {
+          return (
+            fb.pos.y < 0 || fb.pos.y > 100 || fb.pos.x > 200 || fb.pos.x < 0
+          );
+        });
+
+        remove(upBoxes, (b) => {
+          color("cyan");
+          char("c", b.pos);
+        });
+
+        remove(enemies, (e) => {
+          e.firingCooldown--;
+          if (e.firingCooldown <= 0) {
+            eBullets.push({
+              pos: vec(e.pos.x, e.pos.y),
+              angle: e.pos.angleTo(player.pos),
+              rotation: rnd(),
+            });
+            e.firingCooldown = 250;
+          }
+          color("black");
+          char("c", e.pos);
+          return e.pos.y > 100;
+        });
+
+        remove(eBullets, (eb) => {
+          eb.pos.x += 1 * Math.cos(eb.angle);
+          eb.pos.y += 1 * Math.sin(eb.angle);
+          eb.rotaion += 20;
+
+          color("red");
+          const isCollidingWithPlayer = char("c", eb.pos, {
+            rotation: eb.rotation,
+          }).isColliding.char.a;
+
+          if (isCollidingWithPlayer) {
+            begin = true;
+            end();
+          }
+
+          return !eb.pos.isInRect(0, 0, 200, 100);
+        });
+      }
+
+      addEventListener("load", onLoad);
+    </script>
   </head>
   <body style="background: #ddd"></body>
 </html>
